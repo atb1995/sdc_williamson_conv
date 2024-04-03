@@ -27,9 +27,6 @@ ndumps = 1
 # setup shallow water parameters
 R = 6371220.
 H = 5960.
-kvals_Mvals={ 3:3, 2:2, 1:1}
-kvals = [8, 6, 4, 2]
-kvals_Mvals={ 5:5}
 dt_true = 50.
 
 cols=['b','g','r','c']
@@ -135,10 +132,10 @@ for dt in dts:
                         base_scheme = ForwardEuler(domain)
                         scheme = FE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
                 elif (s==1):
-                        M = 1
-                        k = 0
+                        M = 2
+                        k = 2
                         base_scheme = BackwardEuler(domain)
-                        scheme = BE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
+                        scheme = BE_SDC_QD(base_scheme,domain, M, k, quadrature="gauss-radau", final_update=True)
                 elif (s==2):
                         M = 2
                         k = 2
@@ -148,7 +145,7 @@ for dt in dts:
                         M = 2
                         k = 2
                         base_scheme = BackwardEuler(domain)
-                        scheme = BE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
+                        scheme = BE_SDC_QD(base_scheme,domain, M, k, quadrature="gauss-radau", final_update=True)
                 elif(s==4):
                         #scheme= SSPRK3(domain)
                         M=3
@@ -157,10 +154,10 @@ for dt in dts:
                         scheme = FE_SDC(base_scheme, domain, M, k, quadrature="gauss-radau")
                 elif(s==5):
                         #scheme = RK4(domain)
-                        M=3
-                        k =4
+                        M = 3
+                        k = 4
                         base_scheme = BackwardEuler(domain)
-                        scheme = BE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
+                        scheme = BE_SDC_QD(base_scheme,domain, M, k, quadrature="gauss-radau", final_update=True)
                 elif(s==6):
                         #scheme= SSPRK3(domain)
                         M=3
