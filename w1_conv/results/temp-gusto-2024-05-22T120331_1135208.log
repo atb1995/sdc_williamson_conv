@@ -1,0 +1,12 @@
+2024-05-22 12:03:31,018 INFO     Running sw_w1_exp_sdc_conv.py
+2024-05-22 12:03:32,191 ERROR    Gusto is logging this unhandled exception:
+Traceback (most recent call last):
+  File "/data/home/ab1679/sdc_williamson_conv/w1_conv/sw_w1_exp_sdc_conv.py", line 163, in <module>
+    scheme = BE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=False, initial_guess="base")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/sdc.py", line 753, in __init__
+    super().__init__(base_scheme, domain, M, maxk, node_type, node_dist, qdelta_imp, qdelta_exp,
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/sdc.py", line 146, in __init__
+    print(self.Qdelta_imp)
+          ^^^^^^^^^^^^^^^
+AttributeError: 'BE_SDC' object has no attribute 'Qdelta_imp'

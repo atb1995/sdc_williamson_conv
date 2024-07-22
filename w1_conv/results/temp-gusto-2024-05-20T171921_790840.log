@@ -1,0 +1,33 @@
+2024-05-20 17:19:21,625 INFO     Running sw_w1_exp_sdc_conv.py -
+2024-05-20 17:19:21,856 ERROR    Gusto is logging this unhandled exception:
+Traceback (most recent call last):
+  File "/data/home/ab1679/sdc_williamson_conv/w1_conv/sw_w1_exp_sdc_conv.py", line 9, in <module>
+    from gusto import *
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/__init__.py", line 10, in <module>
+    from gusto.domain import *                           # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/domain.py", line 7, in <module>
+    from gusto.coordinates import Coordinates
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/coordinates.py", line 10, in <module>
+    import pandas as pd
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/__init__.py", line 49, in <module>
+    from pandas.core.api import (
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/core/api.py", line 47, in <module>
+    from pandas.core.groupby import (
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/core/groupby/__init__.py", line 1, in <module>
+    from pandas.core.groupby.generic import (
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/core/groupby/generic.py", line 68, in <module>
+    from pandas.core.frame import DataFrame
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/core/frame.py", line 188, in <module>
+    from pandas.core.series import Series
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/core/series.py", line 169, in <module>
+    import pandas.plotting
+  File "/data/home/ab1679/firedrake-june2024/lib/python3.11/site-packages/pandas/plotting/__init__.py", line 66, in <module>
+    from pandas.plotting._misc import (
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1069, in get_code
+  File "<frozen importlib._bootstrap_external>", line 729, in _compile_bytecode
+KeyboardInterrupt

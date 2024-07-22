@@ -1,0 +1,17 @@
+2024-05-21 09:10:26,970 INFO     Running sw_w1_exp_sdc_conv.py -
+2024-05-21 09:10:27,717 ERROR    Gusto is logging this unhandled exception:
+Traceback (most recent call last):
+  File "/data/home/ab1679/sdc_williamson_conv/w1_conv/sw_w1_exp_sdc_conv.py", line 67, in <module>
+    stepper = PrescribedTransport(eqns, scheme, io, transport_methods)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 832, in __init__
+    super().__init__(equation, scheme, io, spatial_methods=transport_methods,
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 287, in __init__
+    super().__init__(equation=equation, io=io)
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 41, in __init__
+    self.setup_scheme()
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 300, in setup_scheme
+    self.scheme.setup(self.equation)
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/time_discretisation.py", line 381, in setup
+    raise NotImplementedError("Non time-derivative terms must be labeled as implicit or explicit")
+NotImplementedError: Non time-derivative terms must be labeled as implicit or explicit

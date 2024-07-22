@@ -1,0 +1,12 @@
+2024-05-22 09:18:20,640 INFO     Running sw_w1_exp_sdc_conv.py
+2024-05-22 09:18:21,815 ERROR    Gusto is logging this unhandled exception:
+Traceback (most recent call last):
+  File "/data/home/ab1679/sdc_williamson_conv/w1_conv/sw_w1_exp_sdc_conv.py", line 208, in <module>
+    stepper.run(t=0, tmax=tmax)
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 863, in run
+    super().run(t, tmax, pick_up=pick_up)
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/timeloop.py", line 180, in run
+    self.io.setup_dump(self.fields, t, pick_up)
+  File "/data/home/ab1679/firedrake-june2024/src/gusto/gusto/io.py", line 405, in setup_dump
+    raise GustoIOError(f'results directory {self.dumpdir} already exists')
+gusto.io.GustoIOError: results directory results/will_1_ref3_dt900.0_k1_deg1 already exists

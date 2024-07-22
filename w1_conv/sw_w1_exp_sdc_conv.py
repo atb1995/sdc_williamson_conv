@@ -29,9 +29,6 @@ ndumps = 1
 # setup shallow water parameters
 R = 6371220.
 H = 5960.
-kvals_Mvals={ 3:3, 2:2, 1:1}
-kvals = [8, 6, 4, 2]
-kvals_Mvals={ 5:5}
 dt_true = 50.
 
 cols=['b','g','r','c']
@@ -131,7 +128,7 @@ for dt in dts:
         for s in scheme_index:
 
                 # I/O
-                dirname = "will_1_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
+                dirname = "will1_sol_1_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
                 dumpfreq = int(tmax / (ndumps*dt))
                 output = OutputParameters(dirname=dirname,
                                         dumpfreq=dumpfreq,
@@ -147,6 +144,10 @@ for dt in dts:
 
 
                 # Time stepper
+                node_type = "RADAU-RIGHT"
+                node_dist = "LEGENDRE"
+                qdelta_imp="BE"
+                qdelta_exp="FE"
                 if (s==0):
                         scheme=BackwardEuler(domain, solver_parameters=solver_parameters)
                 elif (s==1):
@@ -185,6 +186,7 @@ for dt in dts:
                 D_max = 1000.
                 lamda, theta, _ = lonlatr_from_xyz(x[0], x[1], x[2])
                 lamda_c=3.*pi/2.
+                lamda_t=3.*pi/2. + 2.*pi/12.
                 theta_c=0.
                 alpha=0.
 
@@ -195,8 +197,12 @@ for dt in dts:
                 psi.interpolate(psiexpr)
                 uexpr = domain.perp(grad(psi))
                 c_dist=R*acos(sin(theta_c)*sin(theta) + cos(theta_c)*cos(theta)*cos(lamda-lamda_c))
+                c_dist_t=R*acos(sin(theta_c)*sin(theta) + cos(theta_c)*cos(theta)*cos(lamda-lamda_t))
+
 
                 Dexpr = conditional(c_dist < R/3., 0.5*D_max*(1.+cos(3.*pi*c_dist/R)), 0.0)
+
+                Dexpr_sol = conditional(c_dist_t < R/3., 0.5*D_max*(1.+cos(3.*pi*c_dist_t/R)), 0.0)
 
                 u0.project(uexpr)
                 D0.interpolate(Dexpr)
