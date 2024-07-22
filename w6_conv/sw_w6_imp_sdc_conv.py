@@ -8,7 +8,7 @@ from re import L
 from gusto import *
 from firedrake import (IcosahedralSphereMesh, SpatialCoordinate,
                        as_vector, pi, sqrt, min_value, errornorm, norm, cos, sin,
-                       acos, grad, curl, div, conditional)
+                       acos, atan, grad, curl, div, conditional)
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,29 +20,26 @@ import netCDF4 as nc
 
 day = 24.*60.*60.
 # setup resolution and timestepping parameters for convergence test
-dts = [ 600., 400.,300.,200. ]
-tmax = 1*day
+dts = [ 900., 600. ]
+#dts = [ 720.,630., 540., 450., 360.,270.,180. ]
+#dts = [900.]
+dts = [ 400.,300.,200.]
+dts = [ 1440.,1200., 1080., 900.]
+tmax = 2*day
 ndumps = 1
 
-dt_true = 50.
+dt_true = 10.
 
 # setup shallow water parameters
 a = 6371220.
 H = 5960.
 parameters = ShallowWaterParameters(H=H)
-kvals_Mvals={8:4, 6:3, 4:2, 2:1}
-kvals = [8, 6, 4, 2]
-
-kvals_Mvals={ 3:3, 2:2 }
-
-scheme_index= [1,2,3]
+scheme_index= [1,2]
 
 cols=['b','g','r','c']
 
-ref_level= 4
+ref_level = 3
 degree = 1
-#ref_level = 2
-#degree = 1
 mesh = IcosahedralSphereMesh(radius=a,
                              refinement_level=ref_level, degree=2)
 
@@ -56,9 +53,13 @@ lon, lat, _ = lonlatr_from_xyz(x[0], x[1], x[2])
 Omega = parameters.Omega
 fexpr = 2*Omega * x[2] / a
 eqns = ShallowWaterEquations(domain, parameters, fexpr=fexpr, u_transport_option='vector_advection_form')
-
+# # Split continuity term
+# eqns = split_continuity_form(eqns)
+# # Label terms are implicit and explicit
+# eqns.label_terms(lambda t: not any(t.has_label(time_derivative, transport)), implicit)
+# eqns.label_terms(lambda t: t.has_label(transport), explicit)
 # I/O
-dirname = "williamson_6_impsdc_ref%s_dt%s_k%s_deg%s" % (ref_level, dt_true, 1, degree)
+dirname = "williamson_6_BE_SDC_02n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt_true, 1, degree)
 dumpfreq = int(tmax / (ndumps*dt_true))
 output = OutputParameters(dirname=dirname,
                         dumpfreq=dumpfreq,
@@ -68,9 +69,15 @@ transported_fields = [RK4(domain,"u"),
                       RK4(domain,"D")]
 transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
 
+solver_parameters = {'snes_type': 'ksponly',
+                                       'ksp_type': 'cg',
+                                       'pc_type': 'bjacobi',
+                                       'sub_pc_type': 'ilu'}
 
+scheme =  SSPRK3(domain, solver_parameters=solver_parameters)
 # Time stepper
-stepper = SemiImplicitQuasiNewton(eqns, io, transported_fields, transport_methods)
+#stepper = SemiImplicitQuasiNewton(eqns, io, transported_fields, transport_methods)
+stepper = Timestepper(eqns, scheme, io, transport_methods)
 
 # ------------------------------------------------------------------------ #
 # Initial conditions
@@ -118,11 +125,17 @@ D = stepper.fields('D')
 utrue_data = u.dat.data[:]
 Dtrue_data = D.dat.data[:]
 
-print("dt,","k,", "errornorm_D,", "norm_D,", "errornorm_u,", "norm_u")
 
 for dt in dts:
+   #  cfl = 0.1
 
-    # ------------------------------------------------------------------------ #
+   #  dx = (2*pi*R/(12*day))*dt/(cfl)
+
+   #  print(dx)
+
+   #  ref_level = int(np.log2(2*pi*R*cos(atan(0.5))/(5.*dx))  )
+   #  print(ref_level)
+    #------------------------------------------------------------------------ #
     # Set up model objects
     # ------------------------------------------------------------------------ #
     mesh = IcosahedralSphereMesh(radius=a,
@@ -145,29 +158,41 @@ for dt in dts:
     for s in scheme_index:
 
         # I/O
-        dirname = "williamson_6_impsdc_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
+        dirname = "williamson_6_BE_SDC_02n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
         dumpfreq = int(tmax / (ndumps*dt))
         output = OutputParameters(dirname=dirname,
                                 dumpfreq=dumpfreq,
                                 checkpoint_method = 'dumbcheckpoint')
         io = IO(domain, output)
+        node_dist = "LEGENDRE"
+        qdelta_imp="BE"
+        qdelta_exp="FE"
+        solver_parameters = {'snes_type': 'newtonls',
+                                                'ksp_type': 'cg',
+                                                'pc_type': 'bjacobi',
+                                                'sub_pc_type': 'ilu'}
 
         # Time stepper
-        if (s==1):
-          M=1
-          k=0
-          base_scheme=BackwardEuler(domain)
-          scheme=BE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
+        if (s==0):
+          scheme=BackwardEuler(domain, solver_parameters=solver_parameters)
+        elif (s==1):
+          node_type="RADAU-RIGHT"
+          M = 2
+          k = 2
+          base_scheme=BackwardEuler(domain,solver_parameters=solver_parameters)
+          scheme = BE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=False, initial_guess="base")
         elif(s==2):
-           M=2
-           k=2
-           base_scheme=BackwardEuler(domain)
-           scheme=BE_SDC(base_scheme,domain, M, k, quadrature="gauss-radau")
-        elif(s==3):
+           node_type="RADAU-RIGHT"
            M=3
            k=4
-           base_scheme=BackwardEuler(domain)
-           scheme=BE_SDC(base_scheme,domain,M,k,quadrature="gauss-radau")
+           base_scheme=BackwardEuler(domain,solver_parameters=solver_parameters)
+           scheme = BE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=False, initial_guess="base")
+        elif(s==3):
+           node_type="GAUSS"
+           M=3
+           k=4
+           base_scheme=BackwardEuler(domain,solver_parameters=solver_parameters)
+           scheme = BE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
         transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
 
         # Time stepper

@@ -20,31 +20,27 @@ import netCDF4 as nc
 
 day = 24.*60.*60.
 # setup resolution and timestepping parameters for convergence test
-dts = [ 900., 600. ]
-#dts = [ 720.,630., 540., 450., 360.,270.,180. ]
-#dts = [900.]
-dts = [ 400.,300.,200.]
-dts = [ 1440.,1200., 1080., 900.]
-tmax = 2*day
-ndumps = 1
-
+dts = [ 1440.,1200., 1080., 900., 450.]
 dt_true = 10.
+tmax = 1*day
+ndumps = 1
 
 # setup shallow water parameters
 a = 6371220.
 H = 5960.
 parameters = ShallowWaterParameters(H=H)
-scheme_index= [1,2]
-
-cols=['b','g','r','c']
+scheme_index= [0,1,2,3]
 
 ref_level = 3
 degree = 1
+
+#------------------------------------------------------------------------ #
+# Set up model objects
+# ------------------------------------------------------------------------ #
 mesh = IcosahedralSphereMesh(radius=a,
-                             refinement_level=ref_level, degree=2)
+                              refinement_level=ref_level, degree=2)
 
 x = SpatialCoordinate(mesh)
-
 # Domain
 domain = Domain(mesh, dt_true, 'BDM', degree)
 
@@ -58,25 +54,26 @@ eqns = ShallowWaterEquations(domain, parameters, fexpr=fexpr, u_transport_option
 # # Label terms are implicit and explicit
 # eqns.label_terms(lambda t: not any(t.has_label(time_derivative, transport)), implicit)
 # eqns.label_terms(lambda t: t.has_label(transport), explicit)
+
+scheme=ImplicitMidpoint(domain)
+transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
+
+
 # I/O
-dirname = "williamson_6_IMEX_SDC_n2n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt_true, 1, degree)
+dirname = "williamson_6_true_imex_comp_ref%s_dt%s_deg%s" % (ref_level, dt_true, degree)
 dumpfreq = int(tmax / (ndumps*dt_true))
 output = OutputParameters(dirname=dirname,
                         dumpfreq=dumpfreq,
-                        checkpoint_method = 'dumbcheckpoint')
+                        checkpoint=True,
+                        dump_nc=True,
+                        dump_vtus=False,
+                        checkpoint_method="checkpointfile",
+                        chkptfreq=dumpfreq,
+                        dumplist_latlon=['D','u'])
 io = IO(domain, output)
-transported_fields = [RK4(domain,"u"),
-                      RK4(domain,"D")]
-transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
 
-solver_parameters = {'snes_type': 'ksponly',
-                                       'ksp_type': 'cg',
-                                       'pc_type': 'bjacobi',
-                                       'sub_pc_type': 'ilu'}
 
-scheme =  SSPRK3(domain, solver_parameters=solver_parameters)
 # Time stepper
-#stepper = SemiImplicitQuasiNewton(eqns, io, transported_fields, transport_methods)
 stepper = Timestepper(eqns, scheme, io, transport_methods)
 
 # ------------------------------------------------------------------------ #
@@ -119,27 +116,10 @@ stepper.set_reference_profiles([('D', Dbar)])
 
 stepper.run(t=0, tmax=tmax)
 
-u = stepper.fields('u')
-D = stepper.fields('D')
-
-utrue_data = u.dat.data[:]
-Dtrue_data = D.dat.data[:]
-
-
 for dt in dts:
-   #  cfl = 0.1
-
-   #  dx = (2*pi*R/(12*day))*dt/(cfl)
-
-   #  print(dx)
-
-   #  ref_level = int(np.log2(2*pi*R*cos(atan(0.5))/(5.*dx))  )
-   #  print(ref_level)
     #------------------------------------------------------------------------ #
     # Set up model objects
     # ------------------------------------------------------------------------ #
-    mesh = IcosahedralSphereMesh(radius=a,
-                                  refinement_level=ref_level, degree=2)
 
     x = SpatialCoordinate(mesh)
     # Domain
@@ -158,11 +138,16 @@ for dt in dts:
     for s in scheme_index:
 
         # I/O
-        dirname = "williamson_6_IMEX_SDC_n2n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
+        dirname = "williamson_6_IMEX_SDC_comp_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
         dumpfreq = int(tmax / (ndumps*dt))
         output = OutputParameters(dirname=dirname,
                                 dumpfreq=dumpfreq,
-                                checkpoint_method = 'dumbcheckpoint')
+                                checkpoint=True,
+                                dump_nc=True,
+                                dump_vtus=False,
+                                checkpoint_method="checkpointfile",
+                                chkptfreq=dumpfreq,
+                                dumplist_latlon=['D','u'])
         io = IO(domain, output)
         node_dist = "LEGENDRE"
         qdelta_imp="BE"
@@ -174,25 +159,29 @@ for dt in dts:
 
         # Time stepper
         if (s==0):
-          scheme=BackwardEuler(domain, solver_parameters=solver_parameters)
-        elif (s==1):
-          node_type="RADAU-RIGHT"
-          M = 2
-          k = 2
-          base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-          scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
-        elif(s==2):
-           node_type="RADAU-RIGHT"
-           M=3
-           k=4
-           base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-           scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+                node_type="GAUSS"
+                M = 2
+                k = 3
+                base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
+                scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+        elif(s==1):
+                node_type="GAUSS"
+                M=3
+                k=5
+                base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
+                scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True  , initial_guess="base")
+        elif (s==2):
+                node_type="GAUSS"
+                M = 2
+                k = 3
+                base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
+                scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="node-to-node", final_update=True, initial_guess="base")
         elif(s==3):
-           node_type="GAUSS"
-           M=3
-           k=4
-           base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-           scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+                node_type="GAUSS"
+                M=3
+                k=5
+                base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
+                scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="node-to-node", final_update=True, initial_guess="base")
         transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
 
         # Time stepper
@@ -237,20 +226,3 @@ for dt in dts:
         # ------------------------------------------------------------------------ #
 
         stepper.run(t=0, tmax=tmax)
-
-        u = stepper.fields('u')
-        D = stepper.fields('D')
-
-        usol = Function(u.function_space())
-        Dsol = Function(D.function_space())
-
-        usol.dat.data[:] = utrue_data
-        Dsol.dat.data[:] = Dtrue_data
-
-        error_norm_D = errornorm(Dsol, stepper.fields("D"), mesh=mesh)
-        norm_D = norm(Dsol, mesh=mesh)
-
-        error_norm_u = errornorm(usol, stepper.fields("u"), mesh=mesh)
-        norm_u = norm(usol, mesh=mesh)
-
-        print(dt,',', s,',', error_norm_D,',', norm_D,',', error_norm_u,',', norm_u)

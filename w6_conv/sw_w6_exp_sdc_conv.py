@@ -24,8 +24,7 @@ dts = [ 900., 600. ]
 #dts = [ 720.,630., 540., 450., 360.,270.,180. ]
 #dts = [900.]
 dts = [ 400.,300.,200.]
-dts = [ 1440.,1200., 1080., 900.]
-tmax = 2*day
+tmax = 1*day
 ndumps = 1
 
 dt_true = 10.
@@ -59,7 +58,7 @@ eqns = ShallowWaterEquations(domain, parameters, fexpr=fexpr, u_transport_option
 # eqns.label_terms(lambda t: not any(t.has_label(time_derivative, transport)), implicit)
 # eqns.label_terms(lambda t: t.has_label(transport), explicit)
 # I/O
-dirname = "williamson_6_IMEX_SDC_n2n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt_true, 1, degree)
+dirname = "williamson_6_FE_SDC_02n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt_true, 1, degree)
 dumpfreq = int(tmax / (ndumps*dt_true))
 output = OutputParameters(dirname=dirname,
                         dumpfreq=dumpfreq,
@@ -151,14 +150,14 @@ for dt in dts:
     fexpr = 2*Omega * x[2] / a
     eqns = ShallowWaterEquations(domain, parameters, fexpr=fexpr, u_transport_option='vector_advection_form')
     # Split continuity term
-    eqns = split_continuity_form(eqns)
-    # Label terms are implicit and explicit
-    eqns.label_terms(lambda t: not any(t.has_label(time_derivative, transport)), implicit)
-    eqns.label_terms(lambda t: t.has_label(transport), explicit)
+   #  eqns = split_continuity_form(eqns)
+   #  # Label terms are implicit and explicit
+   #  eqns.label_terms(lambda t: not any(t.has_label(time_derivative, transport)), implicit)
+   #  eqns.label_terms(lambda t: t.has_label(transport), explicit)
     for s in scheme_index:
 
         # I/O
-        dirname = "williamson_6_IMEX_SDC_n2n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
+        dirname = "williamson_6_BE_SDC_02n_ref%s_dt%s_k%s_deg%s" % (ref_level, dt, s, degree)
         dumpfreq = int(tmax / (ndumps*dt))
         output = OutputParameters(dirname=dirname,
                                 dumpfreq=dumpfreq,
@@ -167,32 +166,32 @@ for dt in dts:
         node_dist = "LEGENDRE"
         qdelta_imp="BE"
         qdelta_exp="FE"
-        solver_parameters = {'snes_type': 'newtonls',
-                                                'ksp_type': 'gmres',
+        solver_parameters = {'snes_type': 'ksponly',
+                                                'ksp_type': 'cg',
                                                 'pc_type': 'bjacobi',
                                                 'sub_pc_type': 'ilu'}
 
         # Time stepper
         if (s==0):
-          scheme=BackwardEuler(domain, solver_parameters=solver_parameters)
+          scheme=ForwardEuler(domain, solver_parameters=solver_parameters)
         elif (s==1):
           node_type="RADAU-RIGHT"
           M = 2
-          k = 2
-          base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-          scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+          k = 3
+          base_scheme=ForwardEuler(domain,solver_parameters=solver_parameters)
+          scheme = FE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=False, initial_guess="base")
         elif(s==2):
            node_type="RADAU-RIGHT"
            M=3
-           k=4
-           base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-           scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+           k=5
+           base_scheme=ForwardEuler(domain,solver_parameters=solver_parameters)
+           scheme = FE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=False, initial_guess="base")
         elif(s==3):
            node_type="GAUSS"
            M=3
            k=4
-           base_scheme=IMEX_Euler(domain,solver_parameters=solver_parameters)
-           scheme = IMEX_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
+           base_scheme=ForwardEuler(domain,solver_parameters=solver_parameters)
+           scheme = FE_SDC(base_scheme, domain, M, k, node_type, node_dist, qdelta_imp, qdelta_exp, formulation="zero-to-node", final_update=True, initial_guess="base")
         transport_methods = [DGUpwind(eqns, "u"), DGUpwind(eqns, "D")]
 
         # Time stepper
